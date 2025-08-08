@@ -2,6 +2,8 @@ import argparse
 import sys
 from typing import TYPE_CHECKING
 
+from ..dataset_utils import resolve_dataset_name, extract_short_name, list_datasets_with_short_names
+
 if TYPE_CHECKING:
     from asksageclient import AskSageClient
 
@@ -17,7 +19,7 @@ def register_parser(subparsers) -> None:
     
     # datasets delete  
     delete_parser = datasets_subparsers.add_parser('delete', help='Delete an existing dataset')
-    delete_parser.add_argument('name', help='Full name of the dataset to delete')
+    delete_parser.add_argument('name', help='Dataset name to delete (short name or full name)')
     
     # datasets list
     datasets_subparsers.add_parser('list', help='List all datasets')
@@ -59,10 +61,21 @@ def _add_dataset(client: 'AskSageClient', name: str) -> None:
 
 def _delete_dataset(client: 'AskSageClient', name: str) -> None:
     """Delete an existing dataset."""
-    response = client.delete_dataset(dataset=name)
+    # Resolve the dataset name to the full unique name
+    full_name = resolve_dataset_name(client, name)
+    
+    if full_name is None:
+        print(f"Error: Dataset '{name}' not found.", file=sys.stderr)
+        sys.exit(1)
+    
+    response = client.delete_dataset(dataset=full_name)
     
     if isinstance(response, dict) and response.get('success'):
-        print(f"Successfully deleted dataset: {name}")
+        short_name = extract_short_name(full_name)
+        if short_name != full_name:
+            print(f"Successfully deleted dataset: {short_name} ({full_name})")
+        else:
+            print(f"Successfully deleted dataset: {full_name}")
     else:
         error_msg = response.get('error', 'Unknown error') if isinstance(response, dict) else str(response)
         print(f"Failed to delete dataset: {error_msg}", file=sys.stderr)
@@ -72,15 +85,18 @@ def _delete_dataset(client: 'AskSageClient', name: str) -> None:
 def _list_datasets(client: 'AskSageClient') -> None:
     """List all datasets."""
     try:
-        datasets = client.get_datasets()
+        dataset_pairs = list_datasets_with_short_names(client)
         
-        if not datasets:
+        if not dataset_pairs:
             print("No datasets found.")
             return
         
         print("Available datasets:")
-        for dataset in datasets:
-            print(f"  - {dataset}")
+        for full_name, short_name in dataset_pairs:
+            if short_name != full_name:
+                print(f"  - {short_name} ({full_name})")
+            else:
+                print(f"  - {full_name}")
             
     except Exception as e:
         print(f"Failed to retrieve datasets: {e}", file=sys.stderr)

@@ -3,6 +3,7 @@
 from typing import Dict, List, Any, Union
 import json
 import os
+import random
 from pathlib import Path
 
 
@@ -12,12 +13,18 @@ class MockAskSageClient:
     def __init__(self, email: str, api_key: str, **kwargs):
         self.email = email
         self.api_key = api_key
-        self._datasets = ["user_custom_123_example_content", "user_custom_123_test_content"]
+        # Mock some realistic dataset names
+        self._user_id = 145128821  # Fixed user ID for consistent testing
+        self._datasets = [
+            f"user_custom_{self._user_id}_example_content",
+            f"user_custom_{self._user_id}_test-data_content",
+            f"user_custom_{self._user_id}_docs_content"
+        ]
         self._current_dataset = None
     
     def add_dataset(self, dataset: str) -> Dict[str, Any]:
         """Mock dataset addition."""
-        full_name = f"user_custom_123_{dataset}_content"
+        full_name = f"user_custom_{self._user_id}_{dataset}_content"
         if full_name not in self._datasets:
             self._datasets.append(full_name)
             return {"success": True, "message": f"Dataset {dataset} created successfully"}
