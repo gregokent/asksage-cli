@@ -82,13 +82,21 @@ def _train_file(client: 'AskSageClient', args: argparse.Namespace) -> None:
             dataset=dataset_name
         )
         
-        if isinstance(response, dict) and response.get('success'):
+        if isinstance(response, dict):
+            # Check for API error responses based on status codes
+            status = response.get('status', 200)
+            if status >= 400:
+                error_msg = response.get('error') or response.get('message', 'Unknown error')
+                print(f"Failed to train file: {error_msg}", file=sys.stderr)
+                sys.exit(1)
+            else:
+                # Success response - file trained
+                display_name = short_name if short_name != dataset_name else dataset_name
+                print(f"Successfully trained file {file_path} into dataset '{display_name}'")
+        else:
+            # Handle non-dict responses - assume success if no error
             display_name = short_name if short_name != dataset_name else dataset_name
             print(f"Successfully trained file {file_path} into dataset '{display_name}'")
-        else:
-            error_msg = response.get('error', 'Unknown error') if isinstance(response, dict) else str(response)
-            print(f"Failed to train file: {error_msg}", file=sys.stderr)
-            sys.exit(1)
             
     except Exception as e:
         print(f"Error training file {file_path}: {e}", file=sys.stderr)
@@ -137,13 +145,20 @@ def _train_directory(client: 'AskSageClient', args: argparse.Namespace) -> None:
                 dataset=dataset_name
             )
             
-            if isinstance(response, dict) and response.get('success'):
+            if isinstance(response, dict):
+                # Check for API error responses based on status codes
+                status = response.get('status', 200)
+                if status >= 400:
+                    failed += 1
+                    error_msg = response.get('error') or response.get('message', 'Unknown error')
+                    print(f"  ✗ Failed: {error_msg}")
+                else:
+                    successful += 1
+                    print(f"  ✓ Success")
+            else:
+                # Handle non-dict responses - assume success if no error
                 successful += 1
                 print(f"  ✓ Success")
-            else:
-                failed += 1
-                error_msg = response.get('error', 'Unknown error') if isinstance(response, dict) else str(response)
-                print(f"  ✗ Failed: {error_msg}")
                 
         except Exception as e:
             failed += 1

@@ -51,12 +51,19 @@ def _add_dataset(client: 'AskSageClient', name: str) -> None:
     
     response = client.add_dataset(dataset=name)
     
-    if isinstance(response, dict) and response.get('success'):
-        print(f"Successfully added dataset: {name}")
+    if isinstance(response, dict):
+        # Check for API error responses based on status codes
+        status = response.get('status', 200)
+        if status >= 400:
+            error_msg = response.get('error') or response.get('message', 'Unknown error')
+            print(f"Failed to add dataset: {error_msg}", file=sys.stderr)
+            sys.exit(1)
+        else:
+            # Success response - dataset added
+            print(f"Successfully added dataset: {name}")
     else:
-        error_msg = response.get('error', 'Unknown error') if isinstance(response, dict) else str(response)
-        print(f"Failed to add dataset: {error_msg}", file=sys.stderr)
-        sys.exit(1)
+        # Handle non-dict responses
+        print(f"Successfully added dataset: {name}")
 
 
 def _delete_dataset(client: 'AskSageClient', name: str) -> None:
@@ -70,33 +77,62 @@ def _delete_dataset(client: 'AskSageClient', name: str) -> None:
     
     response = client.delete_dataset(dataset=full_name)
     
-    if isinstance(response, dict) and response.get('success'):
+    if isinstance(response, dict):
+        # Check for API error responses based on status codes
+        status = response.get('status', 200)
+        if status >= 400:
+            error_msg = response.get('error') or response.get('message', 'Unknown error')
+            print(f"Failed to delete dataset: {error_msg}", file=sys.stderr)
+            sys.exit(1)
+        else:
+            # Success response - dataset deleted
+            short_name = extract_short_name(full_name)
+            if short_name != full_name:
+                print(f"Successfully deleted dataset: {short_name} ({full_name})")
+            else:
+                print(f"Successfully deleted dataset: {full_name}")
+    else:
+        # Handle non-dict responses - assume success if no error
         short_name = extract_short_name(full_name)
         if short_name != full_name:
             print(f"Successfully deleted dataset: {short_name} ({full_name})")
         else:
             print(f"Successfully deleted dataset: {full_name}")
-    else:
-        error_msg = response.get('error', 'Unknown error') if isinstance(response, dict) else str(response)
-        print(f"Failed to delete dataset: {error_msg}", file=sys.stderr)
-        sys.exit(1)
 
 
 def _list_datasets(client: 'AskSageClient') -> None:
     """List all datasets."""
     try:
-        dataset_pairs = list_datasets_with_short_names(client)
+        # Get datasets directly from client
+        response = client.get_datasets()
         
-        if not dataset_pairs:
+        # Handle different response formats
+        if isinstance(response, dict):
+            status = response.get('status', 200)
+            if status >= 400:
+                error_msg = response.get('error') or response.get('message', 'Unknown error')
+                print(f"Failed to retrieve datasets: {error_msg}", file=sys.stderr)
+                sys.exit(1)
+            
+            # Extract dataset list from response
+            datasets = response.get('response', [])
+        elif isinstance(response, list):
+            datasets = response
+        else:
+            print(f"Unexpected response format: {response}", file=sys.stderr)
+            sys.exit(1)
+        
+        if not datasets:
             print("No datasets found.")
             return
         
         print("Available datasets:")
-        for full_name, short_name in dataset_pairs:
-            if short_name != full_name:
-                print(f"  - {short_name} ({full_name})")
+        for dataset_name in datasets:
+            short_name = extract_short_name(dataset_name)
+            if short_name != dataset_name:
+                print(f"  - {short_name} ({dataset_name})")
             else:
-                print(f"  - {full_name}")
+                print(f"  - {dataset_name}")
             
     except Exception as e:
         print(f"Failed to retrieve datasets: {e}", file=sys.stderr)

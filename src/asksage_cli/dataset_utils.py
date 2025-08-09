@@ -19,7 +19,18 @@ def resolve_dataset_name(client, dataset_name: str) -> Optional[str]:
         Full unique dataset name if found, None if not found
     """
     try:
-        all_datasets = client.get_datasets()
+        response = client.get_datasets()
+        
+        # Handle different response formats
+        if isinstance(response, dict):
+            status = response.get('status', 200)
+            if status >= 400:
+                return None  # Error getting datasets
+            all_datasets = response.get('response', [])
+        elif isinstance(response, list):
+            all_datasets = response
+        else:
+            return None
         
         # If the provided name is already in the list (exact match), return it
         if dataset_name in all_datasets:
@@ -72,7 +83,19 @@ def list_datasets_with_short_names(client) -> List[tuple[str, str]]:
         List of tuples (full_name, short_name)
     """
     try:
-        all_datasets = client.get_datasets()
+        response = client.get_datasets()
+        
+        # Handle different response formats
+        if isinstance(response, dict):
+            status = response.get('status', 200)
+            if status >= 400:
+                return []  # Error getting datasets
+            all_datasets = response.get('response', [])
+        elif isinstance(response, list):
+            all_datasets = response
+        else:
+            return []
+        
         return [(ds, extract_short_name(ds)) for ds in all_datasets]
     except Exception:
         return []

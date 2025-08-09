@@ -48,12 +48,15 @@ def _query_basic(client: 'AskSageClient', args: argparse.Namespace) -> None:
         response = client.query(message=args.message)
         
         if isinstance(response, dict):
-            if response.get('success'):
-                print(response.get('response', 'No response content'))
-            else:
-                error_msg = response.get('error', 'Unknown error')
+            # Check for API error responses
+            if response.get('status', 200) >= 400:
+                error_msg = response.get('error') or response.get('message', 'Unknown error')
                 print(f"Query failed: {error_msg}", file=sys.stderr)
                 sys.exit(1)
+            else:
+                # Extract response message from proper API format
+                message = response.get('message') or response.get('response', 'No response content')
+                print(message)
         else:
             # Handle string response
             print(response)
@@ -90,12 +93,15 @@ def _query_with_file(client: 'AskSageClient', args: argparse.Namespace) -> None:
         )
         
         if isinstance(response, dict):
-            if response.get('success'):
-                print(response.get('response', 'No response content'))
-            else:
-                error_msg = response.get('error', 'Unknown error')
+            # Check for API error responses
+            if response.get('status', 200) >= 400:
+                error_msg = response.get('error') or response.get('message', 'Unknown error')
                 print(f"Query failed: {error_msg}", file=sys.stderr)
                 sys.exit(1)
+            else:
+                # Extract response message from proper API format
+                message = response.get('message') or response.get('response', 'No response content')
+                print(message)
         else:
             print(response)
             
@@ -121,12 +127,15 @@ def _query_with_plugin(client: 'AskSageClient', args: argparse.Namespace) -> Non
         )
         
         if isinstance(response, dict):
-            if response.get('success'):
-                print(response.get('response', 'No response content'))
-            else:
-                error_msg = response.get('error', 'Unknown error')
+            # Check for API error responses
+            if response.get('status', 200) >= 400:
+                error_msg = response.get('error') or response.get('message', 'Unknown error')
                 print(f"Query failed: {error_msg}", file=sys.stderr)
                 sys.exit(1)
+            else:
+                # Extract response message from proper API format
+                message = response.get('message') or response.get('response', 'No response content')
+                print(message)
         else:
             print(response)
             

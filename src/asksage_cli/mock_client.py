@@ -27,34 +27,35 @@ class MockAskSageClient:
         full_name = f"user_custom_{self._user_id}_{dataset}_content"
         if full_name not in self._datasets:
             self._datasets.append(full_name)
-            return {"success": True, "message": f"Dataset {dataset} created successfully"}
-        return {"success": False, "error": "Dataset already exists"}
+            return {"status": 200, "response": f"Dataset {dataset} created successfully"}
+        return {"status": 400, "error": "Dataset already exists"}
     
     def delete_dataset(self, dataset: str) -> Dict[str, Any]:
         """Mock dataset deletion."""
         if dataset in self._datasets:
             self._datasets.remove(dataset)
-            return {"success": True, "message": f"Dataset {dataset} deleted successfully"}
-        return {"success": False, "error": "Dataset not found"}
+            return {"status": 200, "response": f"Dataset {dataset} deleted successfully"}
+        return {"status": 404, "error": "Dataset not found"}
     
-    def get_datasets(self) -> List[str]:
+    def get_datasets(self) -> Dict[str, Any]:
         """Mock get datasets."""
-        return self._datasets.copy()
+        return {"status": 200, "response": self._datasets.copy()}
     
     def assign_dataset(self, dataset: str) -> Dict[str, Any]:
         """Mock dataset assignment."""
         self._current_dataset = dataset
-        return {"success": True, "message": f"Dataset {dataset} assigned"}
+        return {"status": 200, "response": f"Dataset {dataset} assigned"}
     
     def train_with_file(self, file_path: str, context: str = None, dataset: str = None, **kwargs) -> Dict[str, Any]:
         """Mock file training."""
         if not os.path.exists(file_path):
-            return {"success": False, "error": f"File not found: {file_path}"}
+            return {"status": 404, "error": f"File not found: {file_path}"}
         
         file_size = os.path.getsize(file_path)
         return {
-            "success": True,
-            "message": f"Successfully trained file {file_path}",
+            "status": 200,
+            "response": f"Successfully trained file {file_path}",
+            "embedding": [0.1, 0.2, 0.3] * 100,  # Mock embedding vector
             "tokens_used": min(file_size // 4, 1000),  # Mock token calculation
             "dataset": dataset or self._current_dataset
         }
@@ -63,13 +64,14 @@ class MockAskSageClient:
         """Mock content training."""
         content_length = len(str(content))
         return {
-            "success": True,
-            "message": "Content trained successfully",
+            "status": 200,
+            "response": "Content trained successfully",
+            "embedding": [0.1, 0.2, 0.3] * 100,  # Mock embedding vector
             "tokens_used": content_length // 4,
             "dataset": kwargs.get('force_dataset') or self._current_dataset
         }
     
-    def query(self, message: str, **kwargs) -> Union[Dict[str, Any], str]:
+    def query(self, message: str, **kwargs) -> Dict[str, Any]:
         """Mock query."""
         mock_responses = [
             "This is a mock response from AskSage AI. Your question was: '{}'".format(message),
@@ -80,8 +82,13 @@ class MockAskSageClient:
         response_text = mock_responses[len(message) % len(mock_responses)]
         
         return {
-            "success": True,
-            "response": response_text,
+            "status": 200,
+            "message": response_text,
+            "embedding_down": False,
+            "vectors_down": False,
+            "uuid": "mock-uuid-12345",
+            "references": [],
+            "teach": False,
             "tokens_used": len(message) // 2,
             "model": "mock-gpt-4o",
             "dataset": self._current_dataset
@@ -90,12 +97,17 @@ class MockAskSageClient:
     def query_with_file(self, message: str, file_path: str, **kwargs) -> Dict[str, Any]:
         """Mock query with file."""
         if not os.path.exists(file_path):
-            return {"success": False, "error": f"File not found: {file_path}"}
+            return {"status": 404, "error": f"File not found: {file_path}"}
         
         file_size = os.path.getsize(file_path)
         return {
-            "success": True,
-            "response": f"Mock response analyzing file {Path(file_path).name}: {message}",
+            "status": 200,
+            "message": f"Mock response analyzing file {Path(file_path).name}: {message}",
+            "embedding_down": False,
+            "vectors_down": False,
+            "uuid": "mock-uuid-with-file-12345",
+            "references": [f"File: {Path(file_path).name}"],
+            "teach": False,
             "tokens_used": (len(message) + file_size) // 3,
             "model": "mock-gpt-4o",
             "file_analyzed": file_path
@@ -104,20 +116,25 @@ class MockAskSageClient:
     def query_plugin(self, message: str, plugin_name: str, **kwargs) -> Dict[str, Any]:
         """Mock plugin query."""
         return {
-            "success": True,
-            "response": f"Mock response from plugin '{plugin_name}': {message}",
+            "status": 200,
+            "message": f"Mock response from plugin '{plugin_name}': {message}",
+            "embedding_down": False,
+            "vectors_down": False,
+            "uuid": "mock-plugin-uuid-12345",
+            "references": [f"Plugin: {plugin_name}"],
+            "teach": False,
             "tokens_used": len(message) // 2,
             "plugin": plugin_name,
             "dataset": self._current_dataset
         }
     
-    def count_monthly_tokens(self) -> int:
+    def count_monthly_tokens(self) -> Dict[str, Any]:
         """Mock monthly token count."""
-        return 15750  # Mock value
+        return {"status": 200, "response": 15750}
     
-    def count_monthly_teach_tokens(self) -> int:
+    def count_monthly_teach_tokens(self) -> Dict[str, Any]:
         """Mock teaching token count."""
-        return 3280  # Mock value
+        return {"status": 200, "response": 3280}
     
     def get_models(self) -> List[str]:
         """Mock available models."""
