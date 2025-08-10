@@ -28,13 +28,17 @@ Set environment variables:
 ```bash
 export ASKSAGE_EMAIL="your_email@example.com"
 export ASKSAGE_API_KEY="your_api_key"
+export ASKSAGE_USER_BASE_URL="https://api.asksage.ai/user"    # Optional, defaults to official instance
+export ASKSAGE_SERVER_BASE_URL="https://api.asksage.ai/server" # Optional, defaults to official instance
 ```
 
 Or create `~/.asksage/config.json`:
 ```json
 {
   "email": "your_email@example.com",
-  "api_key": "your_api_key"
+  "api_key": "your_api_key",
+  "user_base_url": "https://api.asksage.ai/user",
+  "server_base_url": "https://api.asksage.ai/server"
 }
 ```
 

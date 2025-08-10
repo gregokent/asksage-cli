@@ -19,6 +19,8 @@ def get_client() -> AskSageClient:
     
     email = os.getenv('ASKSAGE_EMAIL')
     api_key = os.getenv('ASKSAGE_API_KEY')
+    user_base_url = os.getenv('ASKSAGE_USER_BASE_URL')
+    server_base_url = os.getenv('ASKSAGE_SERVER_BASE_URL')
     
     if not email or not api_key:
         config_path = Path.home() / '.asksage' / 'config.json'
@@ -29,6 +31,8 @@ def get_client() -> AskSageClient:
                     config = json.load(f)
                 email = config.get('email', email)
                 api_key = config.get('api_key', api_key)
+                user_base_url = config.get('user_base_url', user_base_url)
+                server_base_url = config.get('server_base_url', server_base_url)
             except (json.JSONDecodeError, KeyError, FileNotFoundError):
                 pass
     
@@ -39,7 +43,14 @@ def get_client() -> AskSageClient:
         print("Or set ASKSAGE_TEST_MODE=1 to use mock client for testing.", file=sys.stderr)
         sys.exit(1)
     
-    return AskSageClient(email=email, api_key=api_key)
+    # Build client arguments
+    client_args = {'email': email, 'api_key': api_key}
+    if user_base_url:
+        client_args['user_base_url'] = user_base_url
+    if server_base_url:
+        client_args['server_base_url'] = server_base_url
+    
+    return AskSageClient(**client_args)
 
 
 def main() -> None:

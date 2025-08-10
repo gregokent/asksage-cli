@@ -10,9 +10,11 @@ from pathlib import Path
 class MockAskSageClient:
     """Mock client that simulates AskSage API responses without making network calls."""
     
-    def __init__(self, email: str, api_key: str, **kwargs):
+    def __init__(self, email: str, api_key: str, user_base_url: str = None, server_base_url: str = None, **kwargs):
         self.email = email
         self.api_key = api_key
+        self.user_base_url = user_base_url or "https://api.asksage.ai/user"
+        self.server_base_url = server_base_url or "https://api.asksage.ai/server"
         # Mock some realistic dataset names
         self._user_id = 145128821  # Fixed user ID for consistent testing
         self._datasets = [
